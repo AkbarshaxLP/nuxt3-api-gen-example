@@ -1,5 +1,5 @@
 Generating api methods and types
-cd to dir: api-gen/
+## ⚠️ cd to dir: api-gen/
 
 ## 🚀 API Client Generator
 
