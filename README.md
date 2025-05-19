@@ -41,8 +41,7 @@ These files are ready to use with the `useApiService` composable in your project
 const { data, error, status } = apiScheme.users.getUserList();
 // ...
 </script>
-
-
+```
 
 
 ## Nuxt Minimal Starter
