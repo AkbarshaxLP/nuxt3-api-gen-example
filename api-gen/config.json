@@ -1,0 +1,5 @@
+{
+  "swaggerUrl": "swaggerUrl",
+  "outputFile": "apiScheme.ts",
+  "outputPath": "../api/"
+}
