@@ -1,5 +1,5 @@
 Generating api methods and types
-cd to dir: api-gen/
+## ⚠️ cd to dir: api-gen/
 
 ## 🚀 API Client Generator
 
@@ -41,11 +41,10 @@ These files are ready to use with the `useApiService` composable in your project
 const { data, error, status } = apiScheme.users.getUserList();
 // ...
 </script>
+```
 
 
-
-
-# Nuxt Minimal Starter
+## Nuxt Minimal Starter
 
 Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
