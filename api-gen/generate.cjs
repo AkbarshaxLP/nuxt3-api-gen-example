@@ -88,8 +88,9 @@ async function generateApiFromSwagger(swaggerUrl, outputFile, outputPath) {
           requestContentType = contentTypes.length > 0 ? contentTypes[0] : 'application/json';
         }
 
+        const excludeStatusCodeStarts = ['4', '5']; // 400, 500 exclude error status codes;
         const successResponse = Object.entries(operation.responses || {})
-          .find(([code]) => code.startsWith('2')) || [];
+          .find(([code]) => !excludeStatusCodeStarts.includes(String(code)[0])) || [];
         const responseContentTypes = successResponse[1]?.content
           ? Object.keys(successResponse[1].content)
           : [];
