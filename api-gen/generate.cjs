@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 
 // Чтение конфигурации из config.json
 const params = JSON.parse(fs.readFileSync('config.json', 'utf8'));
-const { swaggerUrl, outputFile, outputPath } = params;
+const { swaggerUrl, outputFile, outputPath, rmMethodPrefix } = params;
 
 async function generateApiFromSwagger(swaggerUrl, outputFile, outputPath) {
   try {
@@ -31,7 +31,8 @@ async function generateApiFromSwagger(swaggerUrl, outputFile, outputPath) {
     let apiMethods = `// Автосгенерированный клиент API\n`;
     apiMethods += `// Сгенерировано из ${swaggerUrl}\n\n`;
     apiMethods += `import type { paths } from './${outputFile.replace('.ts', '')}.types';\n`;
-    apiMethods += `export const apiScheme = {\n`;
+    apiMethods += `export const apiMethods = (options?: any) => {\n`;
+    apiMethods += `  return {\n`;
 
     const groups = {};
 
@@ -116,9 +117,9 @@ async function generateApiFromSwagger(swaggerUrl, outputFile, outputPath) {
         }
 
         if (!hasPathParams && !hasQueryParams && !hasBody) {
-          apiLine = `${methodName}: () => useApi<${responseType}>('${path}'),`;
+          apiLine = `${methodName}: () => useApi<${responseType}>('${path}', { method: '${method.toUpperCase()}', ...options }),`;
         } else if (method === 'delete' && pathParams.length === 1 && pathParams[0] === 'id') {
-          apiLine = `${methodName}: (id: string | number) => useApi<void>(\`${path.replace('{id}', '${id}')}\`, { method: 'DELETE' }),`;
+          apiLine = `${methodName}: (id: string | number) => useApi<void>(\`${path.replace('{id}', '${id}')}\`, { method: 'DELETE', ...options }),`;
         } else {
           const pathParamsStr = pathParams.map(p => `${p}: string | number`).join(', ');
           const pathWithParams = pathParams.reduce((acc, param) =>
@@ -144,25 +145,26 @@ async function generateApiFromSwagger(swaggerUrl, outputFile, outputPath) {
                 `useApi<${responseType}>(\`${pathWithParams}\`, { ` +
                 `method: '${method.toUpperCase()}', ` +
                 `${isMultipart ? 'formData' : 'body'}: ${bodyParam}, ` +
-                `params: query }),`;
+                `params: query, ...options }),`;
             } else {
               apiLine = `${methodName}: (${pathParamsStr ? pathParamsStr + ', ' : ''}${bodyParam}: ${bodyType}) => ` +
                 `useApi<${responseType}>(\`${pathWithParams}\`, { ` +
                 `method: '${method.toUpperCase()}', ` +
-                `${isMultipart ? 'formData' : 'body'}: ${bodyParam} }),`;
+                `${isMultipart ? 'formData' : 'body'}: ${bodyParam}, ...options }),`;
             }
           } else if (hasQueryParams) {
             const queryParamsType = operation.parameters?.some(p => p.in === 'query')
               ? `paths['${path}']['${method}']['parameters']['query']`
               : 'Record<string, unknown>';
             apiLine = `${methodName}: (${pathParamsStr ? pathParamsStr + ', ' : ''}query?: ${queryParamsType}) => ` +
-              `useApi<${responseType}>(\`${pathWithParams}\`, { method: '${method.toUpperCase()}', params: query }),`;
+              `useApi<${responseType}>(\`${pathWithParams}\`, { method: '${method.toUpperCase()}', params: query, ...options }),`;
           } else {
-            apiLine = `${methodName}: (${pathParamsStr}) => useApi<${responseType}>(\`${pathWithParams}\`, { method: '${method.toUpperCase()}' }),`;
+            apiLine = `${methodName}: (${pathParamsStr}) => useApi<${responseType}>(\`${pathWithParams}\`, { method: '${method.toUpperCase()}', ...options }),`;
           }
         }
 
-        groups[groupName].push(`    ${apiLine}`);
+        const apiLineFormat = rmMethodPrefix ? apiLine.replace(`${groupName}_`, '') : apiLine;
+        groups[groupName].push(`      ${apiLineFormat}`);
       }
     }
 
@@ -172,9 +174,10 @@ async function generateApiFromSwagger(swaggerUrl, outputFile, outputPath) {
           .replace(/[^a-zA-Z0-9_$]/g, '_')
           .replace(/^[0-9]/, '_$&');
 
-      apiMethods += `  ${groupNameFormat}: {\n${methods.join('\n')}\n  },\n`;
+      apiMethods += `    ${groupNameFormat}: {\n${methods.join('\n')}\n    },\n`;
     }
 
+    apiMethods += '  };\n';
     apiMethods += '};\n';
 
     fs.writeFileSync(`${outputPath}${outputFile}`, apiMethods);
